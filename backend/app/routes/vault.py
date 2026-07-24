@@ -1,12 +1,14 @@
 from typing import Annotated
 from app.schemas.vault import VaultCreate, VaultUpdate, VaultResponse
 from app.models.vault import Vault
+from app.models.file import File
 from fastapi.routing import APIRouter
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, UploadFile, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import select
 from app.database.database import get_db
+from app.utils.file import save_upload_file
 
 router = APIRouter(prefix="/vaults", tags=["Vaults"])
 
@@ -103,3 +105,41 @@ async def get_vault(vault_id: str, db: Annotated[AsyncSession, Depends(get_db)])
         )
 
     return vault
+
+
+@router.post("/{vault_id}/files")
+async def upload_file_to_vault(
+    vault_id: str,
+    file: UploadFile,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    request: Request,
+):
+    result = await db.execute(select(Vault).where(Vault.id == vault_id))
+    vault = result.scalar_one_or_none()
+
+    if not vault:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Vault not found."
+        )
+    db_file = File(vault_id=vault_id, filename=file.filename)
+    db.add(db_file)
+    await db.flush()
+    try:
+        dest, size, check_sum = await save_upload_file(file)
+    except ValueError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
+    db_file.filesize = size
+    db_file.filepath = str(dest)
+    db_file.status = "STORED_LOCALLY"
+    await db.commit()
+    await db.refresh(db_file)
+    return {
+        "file_name": file.filename,
+        "size": f"{size / (1024 * 1024):.4f} MB",
+        "content_type": file.content_type,
+        "check_sum": check_sum,
+        "destination": str(dest),
+    }

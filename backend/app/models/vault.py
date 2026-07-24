@@ -8,4 +8,6 @@ class Vault(UUIDPkMixin, TimestampMixin, Base):
     __tablename__ = "vaults"
 
     name: Mapped[str] = mapped_column(nullable=False)
-    files: Mapped[list["File"]] = relationship("File", back_populates="vault")
+    files: Mapped[list["File"]] = relationship(
+        "File", back_populates="vault", cascade="all, delete-orphan"
+    )

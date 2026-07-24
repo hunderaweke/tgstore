@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     DEBUG: bool = True
 
+    UPLOAD_DIR: str = "uploads"
+
 
 @lru_cache
 def get_settings() -> Settings:
