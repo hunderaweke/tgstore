@@ -24,6 +24,3 @@ class VaultResponse(VaultBase):
     id: UUID4 = Field(..., description="ID of the vault")
     created_at: datetime = Field(..., description="Creation timestamp of the vault")
     updated_at: datetime = Field(..., description="Last update timestamp of the vault")
-    files: list[UUID4] | None = Field(
-        ..., description="List of file IDs associated with the vault"
-    )

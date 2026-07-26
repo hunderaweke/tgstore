@@ -1,9 +1,11 @@
 from typing import Annotated
+from app.schemas.file import FileChunkResponse, FileResponse
 from app.schemas.vault import VaultCreate, VaultUpdate, VaultResponse
 from app.models.vault import Vault
-from app.models.file import File
+from app.models.file import File, FileChunk
 from fastapi.routing import APIRouter
 from fastapi import Depends, HTTPException, status, UploadFile, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import select
@@ -125,21 +127,69 @@ async def upload_file_to_vault(
     db.add(db_file)
     await db.flush()
     try:
-        dest, size, check_sum = await save_upload_file(file)
+        size, chunks = await save_upload_file(file)
     except ValueError as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         ) from e
+    for chunk in chunks:
+        db_chunk = FileChunk(
+            chunk_index=chunk.chunk_index,
+            file_id=db_file.id,
+            chunk_size=chunk.chunk_size,
+            chunk_hash=chunk.chunk_hash,
+            telegram_message_id=chunk.telegram_message_id,
+            telegram_file_id=chunk.telegram_file_id,
+            telegram_unique_file_id=chunk.telegram_unique_file_id,
+        )
+        db.add(db_chunk)
+        await db.flush()
     db_file.filesize = size
-    db_file.filepath = str(dest)
     db_file.status = "STORED_LOCALLY"
     await db.commit()
-    await db.refresh(db_file)
-    return {
-        "file_name": file.filename,
-        "size": f"{size / (1024 * 1024):.4f} MB",
-        "content_type": file.content_type,
-        "check_sum": check_sum,
-        "destination": str(dest),
-    }
+    await db.refresh(db_file, attribute_names=["chunks"])
+    return FileResponse.model_validate(db_file)
+
+
+@router.get(
+    "/{vault_id}/files",
+    response_model=list[FileResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_files(vault_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
+    result = await db.execute(
+        select(File).where(File.vault_id == vault_id).options(selectinload(File.chunks))
+    )
+    files = result.scalars().all()
+    return files
+
+
+@router.get(
+    "/{vault_id}/files/{file_id}",
+    response_model=FileResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_file(
+    vault_id: str, file_id: str, db: Annotated[AsyncSession, Depends(get_db)]
+):
+    result = await db.execute(
+        select(File)
+        .where(File.id == file_id, File.vault_id == vault_id)
+        .options(selectinload(File.chunks))
+    )
+    file = result.scalar_one_or_none()
+
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found."
+        )
+
+    return FileResponse.model_validate(file)
+
+
+@router.get("/{vault_id}/files/{file_id}/download")
+async def download_file(
+    vault_id: str, file_id: str, db: Annotated[AsyncSession, Depends(get_db)]
+):
+    pass
