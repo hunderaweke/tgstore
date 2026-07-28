@@ -55,8 +55,6 @@ async def save_upload_file(
             chunk_size=telegram_response.media.document.size,
             chunk_hash=hashlib.sha256(chunk).hexdigest(),
             telegram_message_id=telegram_response.id,
-            telegram_file_id="",
-            telegram_unique_file_id="",
         )
         chunks.append(chunk_info)
         size += len(chunk)

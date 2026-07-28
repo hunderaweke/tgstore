@@ -12,7 +12,13 @@ dependencies = [
     "cryptg>=0.6.0",
     "fastapi[standard]>=0.139.2",
     "httpx>=0.28.1",
+    "isort>=8.0.1",
     "psycopg2>=2.9.12",
     "sqlalchemy>=2.0.51",
     "telethon>=1.44.0",
+]
+
+[dependency-groups]
+dev = [
+    "isort>=8.0.1",
 ]

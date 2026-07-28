@@ -15,6 +15,7 @@ class FileResponse(FileBase):
     id: UUID4 = Field(..., description="ID of the file")
     filesize: int = Field(..., description="Size of the file in bytes")
     filepath: str = Field(..., description="Path where the file is stored")
+    mimetype: str = Field(..., description="MIME type of the file")
     status: str = Field(..., description="Status of the file")
     vault_id: UUID4 = Field(..., description="ID of the vault the file belongs to")
     chunks: list[FileChunkResponse] | None = Field(
@@ -28,12 +29,6 @@ class FileChunkBase(BaseModel):
     chunk_hash: str = Field(..., description="SHA256 hash of the file chunk")
     telegram_message_id: int = Field(
         ..., description="Telegram message ID for the file chunk"
-    )
-    telegram_file_id: str = Field(
-        ..., description="Telegram file ID for the file chunk"
-    )
-    telegram_unique_file_id: str = Field(
-        ..., description="Telegram unique file ID for the file chunk"
     )
 
 
