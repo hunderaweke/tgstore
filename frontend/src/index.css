@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource/dm-sans';
+
+@theme {
+  --font-sans: 'DM Sans Variable', 'DM Sans', sans-serif;
+  --font-serif: 'Fraunces Variable', 'Fraunces', serif;
+
+  --color-paper: #f2eee4;
+  --color-surface: #dde5ec;
+  --color-ink: #16232e;
+  --color-stamp: #2e6fa8;
+  --color-forest: #245e73;
+  --color-muted: #7488a0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+@keyframes spoiler-shimmer {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 20px 20px, -20px 20px;
+  }
+}
+
+.telegram-spoiler {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background-color: rgba(116, 136, 160, 0.35);
+  color: transparent;
+  border-radius: 5px;
+  padding: 1px 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  vertical-align: baseline;
+}
+
+.telegram-spoiler:hover:not(.revealed) {
+  background-color: rgba(116, 136, 160, 0.48);
+}
+
+.telegram-spoiler::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background-image: 
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 1px, transparent 1.2px),
+    radial-gradient(circle, rgba(40, 50, 60, 0.45) 1px, transparent 1.3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1.1px);
+  background-size: 6px 6px, 9px 9px, 13px 13px;
+  background-position: 0 0, 2px 3px, 4px 1px;
+  animation: spoiler-shimmer 2.2s linear infinite;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.telegram-spoiler:hover:not(.revealed)::before {
+  opacity: 1;
+}
+
+.telegram-spoiler .spoiler-content {
+  filter: blur(5px);
+  opacity: 0;
+  transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.telegram-spoiler.revealed {
+  background-color: transparent;
+  color: inherit;
+}
+
+.telegram-spoiler.revealed::before {
+  opacity: 0;
+}
+
+.telegram-spoiler.revealed .spoiler-content {
+  filter: blur(0);
+  opacity: 1;
+}
