@@ -2,23 +2,23 @@ from typing import Annotated
 
 from app.dependencies import get_current_user, get_file_service, get_vault_service
 from app.schemas.file import FileResponse
+from app.schemas.user import UserResponse
 from app.schemas.vault import VaultCreate, VaultResponse, VaultUpdate
 from app.services.file import FileService
 from app.services.vault import VaultService
-from fastapi import Depends, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.responses import StreamingResponse
-from fastapi.routing import APIRouter
 
-router = APIRouter(
-    prefix="/vaults", tags=["Vaults"], dependencies=[Depends(get_current_user)]
-)
+router = APIRouter(prefix="/vaults", tags=["Vaults"])
 
 
 @router.post("/", response_model=VaultResponse, status_code=status.HTTP_201_CREATED)
 async def create_vault(
-    vault: VaultCreate, service: Annotated[VaultService, Depends(get_vault_service)]
+    vault: VaultCreate,
+    service: Annotated[VaultService, Depends(get_vault_service)],
+    current_user: Annotated[UserResponse, Depends(get_current_user)],
 ):
-    new_vault = await service.create_vault(vault=vault)
+    new_vault = await service.create_vault(vault_data=vault, user_id=current_user.id)
     return new_vault
 
 
@@ -32,8 +32,11 @@ async def list_vaults(
 
 @router.delete("/{vault_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(
-    vault_id: str, vault_service: Annotated[VaultService, Depends(get_vault_service)]
+    vault_id: str,
+    vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
+    await vault_service.get_vault_by_id(vault_id, user.id)
     await vault_service.delete_vault(vault_id=vault_id)
 
 
@@ -49,9 +52,11 @@ async def update_vault(
 
 @router.get("/{vault_id}", response_model=VaultResponse)
 async def get_vault(
-    vault_id: str, vault_service: Annotated[VaultService, Depends(get_vault_service)]
+    vault_id: str,
+    vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
-    vault = await vault_service.get_vault_by_id(vault_id)
+    vault = await vault_service.get_vault_by_id(vault_id, user.id)
     return vault
 
 
@@ -65,8 +70,9 @@ async def upload_file_to_vault(
     file: UploadFile,
     vault_service: Annotated[VaultService, Depends(get_vault_service)],
     file_service: Annotated[FileService, Depends(get_file_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
-    await vault_service.get_vault_by_id(vault_id)
+    await vault_service.get_vault_by_id(vault_id, user.id)
     db_file = await file_service.upload(vault_id, file)
     return db_file
 
@@ -77,8 +83,12 @@ async def upload_file_to_vault(
     status_code=status.HTTP_200_OK,
 )
 async def get_files(
-    vault_id: str, file_service: Annotated[FileService, Depends(get_file_service)]
+    vault_id: str,
+    vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    file_service: Annotated[FileService, Depends(get_file_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
+    await vault_service.get_vault_by_id(vault_id, user.id)
     return await file_service.list_by_vault_id(vault_id)
 
 
@@ -91,7 +101,10 @@ async def get_file(
     vault_id: str,
     file_id: str,
     file_service: Annotated[FileService, Depends(get_file_service)],
+    vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
+    await vault_service.get_vault_by_id(vault_id, user.id)
     return await file_service.get_by_id(file_id, vault_id)
 
 

@@ -8,16 +8,21 @@ class VaultService:
     def __init__(self, repo: VaultRepository):
         self.repo = repo
 
-    async def create_vault(self, vault: VaultCreate) -> Vault:
-        vault = Vault(**vault.model_dump())
+    async def create_vault(self, vault_data: VaultCreate, user_id: str) -> Vault:
+        vault = Vault(**vault_data.model_dump())
+        vault.user_id = user_id
         return await self.repo.create(vault)
 
-    async def get_vault_by_id(self, vault_id: str) -> Vault:
+    async def get_vault_by_id(self, vault_id: str, user_id: str) -> Vault:
         result = await self.repo.get(vault_id)
         if result is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="vault not found",
+            )
+        if result.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="resource not allowed"
             )
         return result
 
