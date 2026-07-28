@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from app.dependencies import get_file_service, get_vault_service
+from app.dependencies import get_current_user, get_file_service, get_vault_service
 from app.schemas.file import FileResponse
 from app.schemas.vault import VaultCreate, VaultResponse, VaultUpdate
 from app.services.file import FileService
@@ -9,7 +9,9 @@ from fastapi import Depends, UploadFile, status
 from fastapi.responses import StreamingResponse
 from fastapi.routing import APIRouter
 
-router = APIRouter(prefix="/vaults", tags=["Vaults"])
+router = APIRouter(
+    prefix="/vaults", tags=["Vaults"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.post("/", response_model=VaultResponse, status_code=status.HTTP_201_CREATED)

@@ -1,6 +1,7 @@
-from .base import UUIDPkMixin, TimestampMixin, Base
-from sqlalchemy import String, Boolean
+from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
+
+from .base import Base, TimestampMixin, UUIDPkMixin
 
 
 class User(UUIDPkMixin, TimestampMixin, Base):
@@ -11,7 +12,7 @@ class User(UUIDPkMixin, TimestampMixin, Base):
     )
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     last_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    picture: Mapped[str] = mapped_column(String, nullable=True)
 
     def __str__(self):
         return f"User(id={self.id}, email={self.email}, first_name={self.first_name}, last_name={self.last_name})"

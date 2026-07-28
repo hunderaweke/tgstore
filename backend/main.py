@@ -1,16 +1,19 @@
 from typing import Annotated
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from fastapi.concurrency import asynccontextmanager
-from app.settings.settings import get_settings
-from app.routes.vault import router as vault_router
-from app.workers.worker import WorkerSettings, get_redis_pool
-from app.database.database import get_db, AsyncSession
-from sqlalchemy.sql import select
-from sqlalchemy.orm import selectinload
+
+from app.core import download_file_chunks, telegram_app
+from app.database.database import AsyncSession, get_db
 from app.models.file import File
-from fastapi import Depends
-from app.core import telegram_app, download_file_chunks
+from app.routes.auth import router as auth_router
+from app.routes.user import router as user_router
+from app.routes.vault import router as vault_router
+from app.settings.settings import get_settings
+from app.workers.worker import get_redis_pool
+from fastapi import Depends, FastAPI
+from fastapi.concurrency import asynccontextmanager
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import select
+from starlette.middleware.sessions import SessionMiddleware
 
 gen = get_db()
 settings = get_settings()
@@ -37,8 +40,10 @@ app = FastAPI(
     version=settings.VERSION,
     lifespan=lifespan,
 )
-
+app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 app.include_router(vault_router)
+app.include_router(user_router)
+app.include_router(auth_router)
 
 
 @app.get("/download/{file_id}")

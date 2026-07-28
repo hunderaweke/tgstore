@@ -1,4 +1,5 @@
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +21,16 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     TELEGRAM_API_URL: str
 
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
+    SESSION_SECRET: str
+    JWT_SECRET: str
+    ACCESS_TOKEN_EXPIRY_HOURS: int
+    REFRESH_TOKEN_EXPIRY_DAYS: int
+    JWT_ALGORITHM: str
+
+    USING_HTTPS: bool = False
     UPLOAD_DIR: str = "uploads"
     DOWNLOAD_DIR: str = "downloads"
 
