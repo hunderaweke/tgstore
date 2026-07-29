@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
 
     FRONTEND_URL: str = "http://localhost:5173"
-
-    USING_HTTPS: bool = False
+    FRONTEND_AUTH_REDIRECT_URI: str = "http://localhost:5173/dashboard"
+    DEVELOPMENT: bool = True
     UPLOAD_DIR: str = "uploads"
     DOWNLOAD_DIR: str = "downloads"
 

@@ -22,14 +22,14 @@ def _set_auth_cookies(
         access_token,
         httponly=True,
         samesite="lax",
-        secure=settings.USING_HTTPS,
+        secure=not settings.DEVELOPMENT,
     )
     response.set_cookie(
         "refresh_token",
         refresh_token,
         httponly=True,
         samesite="lax",
-        secure=settings.USING_HTTPS,
+        secure=not settings.DEVELOPMENT,
     )
 
 
@@ -70,7 +70,7 @@ async def google_callback(
     new_user = await user_service.create_or_get(user)
     tokens = create_tokens(new_user.id)
     response = RedirectResponse(
-        url=f"{settings.FRONTEND_URL}/dashboard", status_code=status.HTTP_302_FOUND
+        url=f"{settings.FRONTEND_AUTH_REDIRECT_URI}", status_code=status.HTTP_302_FOUND
     )
     _set_auth_cookies(response, tokens.access_token, tokens.refresh_token)
     return response
