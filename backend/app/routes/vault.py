@@ -36,8 +36,7 @@ async def delete_vault(
     vault_service: Annotated[VaultService, Depends(get_vault_service)],
     user: Annotated[UserResponse, Depends(get_current_user)],
 ):
-    await vault_service.get_vault_by_id(vault_id, user.id)
-    await vault_service.delete_vault(vault_id=vault_id)
+    await vault_service.delete_vault(vault_id=vault_id, user_id=user.id)
 
 
 @router.put("/{vault_id}", response_model=VaultResponse)
@@ -45,8 +44,9 @@ async def update_vault(
     vault_id: str,
     vault_update: VaultUpdate,
     service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
-    vault = await service.update(vault_id, vault_update)
+    vault = await service.update(vault_id, vault_update, user.id)
     return vault
 
 

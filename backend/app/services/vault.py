@@ -29,12 +29,12 @@ class VaultService:
     async def list_vaults(self, offset: int = 0, limit: int = 0) -> list[Vault]:
         return await self.repo.list(offset, limit)
 
-    async def delete_vault(self, vault_id: str) -> None:
-        result = await self.get_vault_by_id(vault_id)
+    async def delete_vault(self, vault_id: str, user_id: str) -> None:
+        result = await self.get_vault_by_id(vault_id, user_id)
         await self.repo.delete(result)
 
-    async def update(self, vault_id: str, data: VaultUpdate) -> Vault:
-        vault = await self.get_vault_by_id(vault_id)
+    async def update(self, vault_id: str, data: VaultUpdate, user_id: str) -> Vault:
+        vault = await self.get_vault_by_id(vault_id, user_id)
         update_data = data.model_dump(exclude_unset=True)
         if not update_data:
             return vault
