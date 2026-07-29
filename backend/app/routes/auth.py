@@ -2,7 +2,7 @@ from typing import Annotated
 
 from app.auth.auth import TokenExpiredError, create_tokens, refresh_access_token
 from app.auth.oauth import GoogleOauthResponse, oauth
-from app.dependencies import get_user_service
+from app.dependencies import get_current_user, get_user_service
 from app.schemas.user import UserCreate, UserResponse
 from app.services.user import UserService
 from app.settings.settings import get_settings
@@ -27,6 +27,21 @@ def _set_auth_cookies(
     response.set_cookie(
         "refresh_token",
         refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=not settings.DEVELOPMENT,
+    )
+
+
+def _delete_auth_cookies(response: Response):
+    response.delete_cookie(
+        "access_token",
+        httponly=True,
+        samesite="lax",
+        secure=not settings.DEVELOPMENT,
+    )
+    response.delete_cookie(
+        "refresh_token",
         httponly=True,
         samesite="lax",
         secure=not settings.DEVELOPMENT,
@@ -74,6 +89,13 @@ async def google_callback(
     )
     _set_auth_cookies(response, tokens.access_token, tokens.refresh_token)
     return response
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    response: Response, _: Annotated[UserResponse, Depends(get_current_user)]
+):
+    _delete_auth_cookies(response)
 
 
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
