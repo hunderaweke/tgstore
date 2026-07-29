@@ -1,5 +1,6 @@
 from app.models.vault import Vault
-from app.repositories.vault import VaultRepository
+from app.repositories.vault import VaultRepository, VaultSortField
+from app.schemas.common import SortOrder
 from app.schemas.vault import VaultCreate, VaultUpdate
 from fastapi import HTTPException, status
 
@@ -26,8 +27,18 @@ class VaultService:
             )
         return result
 
-    async def list_vaults(self, offset: int = 0, limit: int = 0) -> list[Vault]:
-        return await self.repo.list(offset, limit)
+    async def list_vaults(
+        self,
+        user_id: str,
+        offset: int,
+        limit: int,
+        search: str | None = None,
+        sort_by: VaultSortField = VaultSortField.created_at,
+        sort_order: SortOrder = SortOrder.desc,
+    ) -> tuple[list[Vault], int]:
+        return await self.repo.list_vaults(
+            user_id, offset, limit, search=search, sort_by=sort_by, sort_order=sort_order
+        )
 
     async def delete_vault(self, vault_id: str, user_id: str) -> None:
         result = await self.get_vault_by_id(vault_id, user_id)

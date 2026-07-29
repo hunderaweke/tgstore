@@ -3,7 +3,8 @@ from typing import AsyncIterator
 
 from app.core.core import download_file_chunks
 from app.models.file import File, FileChunk, FileStatus
-from app.repositories.file import FileRepository
+from app.repositories.file import FileRepository, FileSortField
+from app.schemas.common import SortOrder
 from app.schemas.file import FileCreate
 from app.utils.file import save_upload_file
 from fastapi import HTTPException, UploadFile, status
@@ -33,8 +34,27 @@ class FileService:
         db_file = await self.get_by_id(file_id)
         await self.repo.delete(db_file)
 
-    async def list_by_vault_id(self, vault_id: str) -> list[File]:
-        return await self.repo.get_by_vault_id(vault_id)
+    async def list_by_vault_id(
+        self,
+        vault_id: str,
+        offset: int,
+        limit: int,
+        search: str | None = None,
+        status: FileStatus | None = None,
+        mimetype: str | None = None,
+        sort_by: FileSortField = FileSortField.created_at,
+        sort_order: SortOrder = SortOrder.desc,
+    ) -> tuple[list[File], int]:
+        return await self.repo.get_by_vault_id(
+            vault_id,
+            offset,
+            limit,
+            search=search,
+            status=status,
+            mimetype=mimetype,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
 
     async def upload(self, vault_id: str, upload_file: UploadFile) -> File:
         mimetype = upload_file.content_type or (

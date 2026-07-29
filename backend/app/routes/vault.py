@@ -1,6 +1,10 @@
 from typing import Annotated
 
 from app.dependencies import get_current_user, get_file_service, get_vault_service
+from app.models.file import FileStatus
+from app.repositories.file import FileSortField
+from app.repositories.vault import VaultSortField
+from app.schemas.common import Page, PaginationParams, SortOrder
 from app.schemas.file import FileResponse
 from app.schemas.user import UserResponse
 from app.schemas.vault import VaultCreate, VaultResponse, VaultUpdate
@@ -22,12 +26,24 @@ async def create_vault(
     return new_vault
 
 
-@router.get("/", response_model=list[VaultResponse])
+@router.get("/", response_model=Page[VaultResponse])
 async def list_vaults(
     vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
+    pagination: Annotated[PaginationParams, Depends()],
+    search: str | None = None,
+    sort_by: VaultSortField = VaultSortField.created_at,
+    sort_order: SortOrder = SortOrder.desc,
 ):
-    vaults = await vault_service.list_vaults()
-    return vaults
+    vaults, total = await vault_service.list_vaults(
+        user.id,
+        pagination.offset,
+        pagination.limit,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+    return Page.create(vaults, total, pagination)
 
 
 @router.delete("/{vault_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -79,7 +95,7 @@ async def upload_file_to_vault(
 
 @router.get(
     "/{vault_id}/files",
-    response_model=list[FileResponse],
+    response_model=Page[FileResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_files(
@@ -87,9 +103,25 @@ async def get_files(
     vault_service: Annotated[VaultService, Depends(get_vault_service)],
     file_service: Annotated[FileService, Depends(get_file_service)],
     user: Annotated[UserResponse, Depends(get_current_user)],
+    pagination: Annotated[PaginationParams, Depends()],
+    search: str | None = None,
+    status_filter: FileStatus | None = None,
+    mimetype: str | None = None,
+    sort_by: FileSortField = FileSortField.created_at,
+    sort_order: SortOrder = SortOrder.desc,
 ):
     await vault_service.get_vault_by_id(vault_id, user.id)
-    return await file_service.list_by_vault_id(vault_id)
+    files, total = await file_service.list_by_vault_id(
+        vault_id,
+        pagination.offset,
+        pagination.limit,
+        search=search,
+        status=status_filter,
+        mimetype=mimetype,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+    return Page.create(files, total, pagination)
 
 
 @router.get(
@@ -113,7 +145,10 @@ async def download_file(
     vault_id: str,
     file_id: str,
     file_service: Annotated[FileService, Depends(get_file_service)],
+    vault_service: Annotated[VaultService, Depends(get_vault_service)],
+    user: Annotated[UserResponse, Depends(get_current_user)],
 ):
+    await vault_service.get_vault_by_id(vault_id, user.id)
     db_file, chunks = await file_service.download(file_id, vault_id)
     return StreamingResponse(
         chunks,
