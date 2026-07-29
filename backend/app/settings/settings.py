@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRY_DAYS: int
     JWT_ALGORITHM: str
 
+    FRONTEND_URL: str = "http://localhost:5173"
+
     USING_HTTPS: bool = False
     UPLOAD_DIR: str = "uploads"
     DOWNLOAD_DIR: str = "downloads"

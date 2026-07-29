@@ -10,6 +10,7 @@ from app.settings.settings import get_settings
 from app.workers.worker import get_redis_pool
 from fastapi import Depends, FastAPI
 from fastapi.concurrency import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import select
@@ -39,6 +40,13 @@ app = FastAPI(
     debug=settings.DEBUG,
     version=settings.VERSION,
     lifespan=lifespan,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.FRONTEND_URL],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 app.include_router(vault_router)

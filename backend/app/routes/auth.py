@@ -5,19 +5,31 @@ from app.auth.oauth import GoogleOauthResponse, oauth
 from app.dependencies import get_user_service
 from app.schemas.user import UserCreate, UserResponse
 from app.services.user import UserService
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from jwt import InvalidTokenError
 from app.settings.settings import get_settings
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
+from jwt import InvalidTokenError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-settings= get_settings()
+settings = get_settings()
 
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+
+def _set_auth_cookies(
+    response: Response, access_token: str, refresh_token: str
+) -> None:
     response.set_cookie(
-        "access_token", access_token, httponly=True, samesite="lax",secure=settings.USING_HTTPS
+        "access_token",
+        access_token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.USING_HTTPS,
     )
     response.set_cookie(
-        "refresh_token", refresh_token, httponly=True, samesite="lax",secure=settings.USING_HTTPS
+        "refresh_token",
+        refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.USING_HTTPS,
     )
 
 
@@ -31,11 +43,9 @@ async def google_login(request: Request):
     "/google/callback",
     name="google_callback",
     status_code=status.HTTP_200_OK,
-    response_model=UserResponse,
 )
 async def google_callback(
     request: Request,
-    response: Response,
     user_service: Annotated[UserService, Depends(get_user_service)],
 ):
     try:
@@ -59,8 +69,11 @@ async def google_callback(
     )
     new_user = await user_service.create_or_get(user)
     tokens = create_tokens(new_user.id)
+    response = RedirectResponse(
+        url=f"{settings.FRONTEND_URL}/dashboard", status_code=status.HTTP_302_FOUND
+    )
     _set_auth_cookies(response, tokens.access_token, tokens.refresh_token)
-    return new_user
+    return response
 
 
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
