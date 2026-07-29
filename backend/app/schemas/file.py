@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, ConfigDict, UUID4
+from datetime import datetime
+
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 
 class FileBase(BaseModel):
@@ -20,6 +22,12 @@ class FileResponse(FileBase):
     vault_id: UUID4 = Field(..., description="ID of the vault the file belongs to")
     chunks: list[FileChunkResponse] | None = Field(
         ..., description="List of file chunks associated with the file"
+    )
+    created_at: datetime = Field(
+        ..., description="Timestamp for when the file was uploaded"
+    )
+    updated_at: datetime = Field(
+        ..., description="Timestamp for the updating of the file"
     )
 
 
